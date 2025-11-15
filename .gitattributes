@@ -1,3 +1,5 @@
 * text eol=lf
 * text eol=lf
 *.png binary
+*.raw binary
+*.rgb binary

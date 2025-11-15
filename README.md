@@ -14,7 +14,7 @@ The screenshot is the 'Hello, World !' - a very basic raycaster running in a 120
 ## Next Steps
 I'll iterate on this for as long as I can be bothered.  I certainly want to add texture-mapping as I'm really interested in seeing how `notcurses` renders that.  The things that are 'on the list', in no particular order, are:
 - [ ] Collision Detection
-- [ ] A proper colour palette to allow shading
+- [x] A proper colour palette to allow shading
 - [ ] Texture-mapped walls
 - [ ] Texture-mapped floors and ceilings
 - [ ] Transparent areas in walls (ie. windows)

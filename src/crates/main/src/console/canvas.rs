@@ -3,6 +3,8 @@ use std::pin::Pin;
 
 use notcurses::{Notcurses, Plane, Size, Visual, VisualBuilder};
 
+use notray_engine::raycasting::worlds::assets;
+
 use crate::{Error, Result};
 use super::ResultCoalescing;
 
@@ -42,8 +44,10 @@ impl<'nc> NotcursesCanvas<'nc> {
         let (x, y, width) = (x as usize, y as usize, self.width_pixels as usize);
         let index = y * width + x;
 
-        // TODO: A proper palette needs to be defined / loaded
-        let (red, green, blue) = if colour == 1 { (0, 0, 255) } else if colour == 2 { (127, 0, 0) } else if colour == 3 { (255, 0, 0) } else if colour == 4 { (0, 255, 0) } else { (0, 0, 0) };
+        let palette_index = colour as usize * 3;
+        let palette_entry = &assets::PALETTE[palette_index..palette_index + 3];
+        let (red, green, blue) = (palette_entry[0], palette_entry[1], palette_entry[2]);
+
         *self.pixels.get_mut(index).unwrap() = Pixel { red, green, blue, alpha: 0xff };
         Ok(())
     }
