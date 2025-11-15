@@ -1,5 +1,5 @@
 # Notray
-[![Hello, World !](20251115-hello-world-400x240-120x41-400x328.png)](doc/screenshots/20251115-hello-world-400x240-120x41-1970x1616.png)
+[![Hello, World !](doc/screenshots/20251115-hello-world-400x240-120x41-400x328.png)](doc/screenshots/20251115-hello-world-400x240-120x41-1970x1616.png)
 
 ## Huh ?
 I had an itch.  I love a good TUI and I've been wanting to play with the rather awesome [notcurses](https://notcurses.com/) for a while.  A couple of weekends ago I decided to put some effort in and scratch that itch.
