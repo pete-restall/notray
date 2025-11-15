@@ -1,0 +1,10 @@
+[package]
+name = "notray-engine"
+version = "0.1.0"
+edition = "2024"
+authors = ["Pete Restall <pete@restall.net>"]
+
+[dependencies]
+fixed = "1.29"
+notcurses = "3.6.0"
+notray-procmacro = { path = "../procmacro" }

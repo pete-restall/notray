@@ -1,0 +1,7 @@
+[workspace]
+members = ["crates/*"]
+default-members = ["crates/main"]
+resolver = "3"
+
+[profile.dev]
+opt-level = 1

@@ -1,0 +1,14 @@
+[package]
+name = "notray-procmacro"
+version = "0.1.0"
+edition = "2024"
+authors = ["Pete Restall <pete@restall.net>"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+fixed = "1.29"
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "2.0", features = ["full"] }
