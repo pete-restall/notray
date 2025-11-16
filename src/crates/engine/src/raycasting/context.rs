@@ -25,7 +25,7 @@ pub struct RaycastingContext<TEngineParameters: EngineParameters + ProjectionPla
 
     is_horizontal_ray_intersection: bool,
     distance_to_wall: U8F24,
-    cell_tag: CellTag
+    cell_tag: Option<CellTag>
 }
 
 impl<TEngineParameters: EngineParameters + ProjectionPlaneParameters + Trigonometry> RaycastingContext<TEngineParameters> {
@@ -44,7 +44,7 @@ impl<TEngineParameters: EngineParameters + ProjectionPlaneParameters + Trigonome
             ray_cell_step: Vector2d::default(),
             is_horizontal_ray_intersection: false,
             distance_to_wall: U8F24::MAX,
-            cell_tag: CellTag::default()
+            cell_tag: None
         }
     }
 
@@ -132,17 +132,22 @@ impl<TEngineParameters: EngineParameters + ProjectionPlaneParameters + Trigonome
                 self.ray_cell.set_y(self.ray_cell.y().saturating_add_signed(self.ray_cell_step.y().into()));
             }
 
+            let intersection_distance = if self.is_horizontal_ray_intersection {
+                (self.ray_abs_distance.x() - self.ray_delta.x()).cast_unsigned().lossy_into()
+            } else {
+                (self.ray_abs_distance.y() - self.ray_delta.y()).cast_unsigned().lossy_into()
+            };
+
+            if intersection_distance > TEngineParameters::MAX_RAY_DISTANCE {
+                break;
+            }
+
             // TODO: Place the match arms (but not the call to 'probe_cell') into another object that deals with (column) rendering...
             let probe = CellProbe::new(self.ray_cell);
             match world.probe_cell(&probe) {
                 CellProbeResult::Opaque(cell_tag) => {
-                    self.cell_tag = cell_tag;
-                    self.distance_to_wall = if self.is_horizontal_ray_intersection {
-                        (self.ray_abs_distance.x() - self.ray_delta.x()).cast_unsigned().lossy_into()
-                    } else {
-                        (self.ray_abs_distance.y() - self.ray_delta.y()).cast_unsigned().lossy_into()
-                    };
-
+                    self.cell_tag = Some(cell_tag);
+                    self.distance_to_wall =  intersection_distance;
                     break;
                 },
 
@@ -184,4 +189,8 @@ impl<TEngineParameters: EngineParameters + ProjectionPlaneParameters + Trigonome
     }
 
     pub fn is_wall_horizontal(&self) -> bool { self.is_horizontal_ray_intersection }
+
+    pub fn cell_tag(&self) -> Option<CellTag> {
+        self.cell_tag
+    }
 }

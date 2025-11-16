@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use notcurses::Notcurses;
 
-use notray_engine::{Canvas, Pollable, Result as EngineResult};
+use notray_engine::{Canvas, Colour, Pollable, Result as EngineResult};
 
 use crate::{EngineResultCoalescing, Result};
 use super::{NotcursesCanvas, ResultCoalescing};
@@ -42,7 +42,7 @@ impl<'c> Pollable for SharedCanvas<'c> {
 }
 
 impl<'nc> Canvas for SharedCanvas<'nc> {
-    fn set_pixel(&mut self, x: u16, y: u16, colour: u8) -> EngineResult<()> {
+    fn set_pixel(&mut self, x: u16, y: u16, colour: Colour) -> EngineResult<()> {
         self.canvas.borrow_mut().set_pixel(x, y, colour).coalesce_err()
     }
 }

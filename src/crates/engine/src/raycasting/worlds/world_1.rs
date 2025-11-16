@@ -1,4 +1,6 @@
-use crate::raycasting::{Angle, CellProbe, CellProbeResult, CellTag, World, WorldCoordinates};
+use crate::Colour;
+use crate::raycasting::*;
+use crate::raycasting::worlds::assets;
 
 pub struct World1;
 
@@ -33,6 +35,26 @@ impl World for World1 {
         } else {
             CellProbeResult::Opaque(CellTag::from_world_cell_id(0))
         }
+    }
+}
+
+impl WorldRendering for World1 {
+    type SkyRenderer<'c> = SolidColourColumnRenderer<'c>;
+
+    type WallRenderer<'c> = SolidColourColumnRenderer<'c>;
+
+    type GroundRenderer<'c> = SolidColourColumnRenderer<'c>;
+
+    fn sky_for_column<'c>(&self, _cell: Option<CellTag>, column: &'c mut RenderingColumn) -> Self::SkyRenderer<'c> {
+        Self::SkyRenderer::new(assets::Palette::SKY_LIGHTEST, column)
+    }
+
+    fn wall_for_column<'c>(&self, _cell: Option<CellTag>, column: &'c mut RenderingColumn) -> Self::WallRenderer<'c> {
+        Self::WallRenderer::new(Colour::new(76), column)
+    }
+
+    fn ground_for_column<'c>(&self, _cell: Option<CellTag>, column: &'c mut RenderingColumn) -> Self::GroundRenderer<'c> {
+        Self::GroundRenderer::new(assets::Palette::GRASS_LIGHTEST, column)
     }
 }
 

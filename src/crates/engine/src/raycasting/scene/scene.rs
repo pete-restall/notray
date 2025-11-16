@@ -1,4 +1,4 @@
-use crate::{Canvas, FrameRenderer, Result};
+use crate::{Canvas, Colour, FrameRenderer, Result};
 use crate::raycasting::*;
 
 pub struct Scene<TEngineParameters, TWorld>
@@ -38,7 +38,7 @@ impl<TEngineParameters, TWorld> HasCameraMut for Scene<TEngineParameters, TWorld
 impl<TEngineParameters, TWorld, TCanvas> FrameRenderer<TCanvas> for Scene<TEngineParameters, TWorld>
     where
         TEngineParameters: EngineParameters + ProjectionPlaneParameters + Trigonometry,
-        TWorld: World,
+        TWorld: World + WorldRendering,
         TCanvas: Canvas {
 
     fn render_frame_onto(&mut self, canvas: &mut TCanvas) -> Result<()> {
@@ -49,18 +49,25 @@ impl<TEngineParameters, TWorld, TCanvas> FrameRenderer<TCanvas> for Scene<TEngin
             self.raycasting_context.cast_ray(&self.world)?;
 
             let projected_wall_height = self.raycasting_context.projected_wall_height();
-
-            // TODO: Just a daft rendering of a solid colour at present - more sophistication is required
             let top_of_wall = (TEngineParameters::CANVAS_HEIGHT_PIXELS - projected_wall_height) / 2;
             let bottom_of_wall = TEngineParameters::CANVAS_HEIGHT_PIXELS - top_of_wall;
-            for y in 0..top_of_wall {
-                canvas.set_pixel(x, y, 1)?;
+
+            let mut column = RenderingColumn::new(x, 0, top_of_wall);
+            {
+                let mut sky = self.world.sky_for_column(self.raycasting_context.cell_tag(), &mut column);
+                sky.render_column_onto(canvas)?;
             }
-            for y in top_of_wall..bottom_of_wall {
-                canvas.set_pixel(x, y, if self.raycasting_context.is_wall_horizontal() { 2 } else { 3 })?;
+
+            column.next_span(projected_wall_height);
+            {
+                let mut wall = self.world.wall_for_column(self.raycasting_context.cell_tag(), &mut column);
+                wall.render_column_onto(canvas)?;
             }
-            for y in bottom_of_wall..TEngineParameters::CANVAS_HEIGHT_PIXELS {
-                canvas.set_pixel(x, y, 4)?;
+
+            column.next_span(TEngineParameters::CANVAS_HEIGHT_PIXELS - bottom_of_wall);
+            {
+                let mut ground = self.world.ground_for_column(self.raycasting_context.cell_tag(), &mut column);
+                ground.render_column_onto(canvas)?;
             }
 
             if !self.raycasting_context.next_column()? {
@@ -93,7 +100,7 @@ impl<'c, TEngineParameters, TCanvas> Frame<'c, TEngineParameters, TCanvas>
         Self { _camera: camera, canvas, _raycasting_context: raycasting_context }
     }
 
-    pub fn set_pixel(&mut self, x: u16, y: u16, colour: u8) -> Result<()> {
+    pub fn set_pixel(&mut self, x: u16, y: u16, colour: Colour) -> Result<()> {
         self.canvas.set_pixel(x, y, colour)
     }
 }

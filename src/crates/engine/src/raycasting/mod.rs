@@ -19,6 +19,9 @@ pub use object::*;
 mod projection_plane_parameters;
 pub use projection_plane_parameters::*;
 
+mod rendering;
+pub use rendering::*;
+
 mod scene;
 pub use scene::*;
 

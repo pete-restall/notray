@@ -3,6 +3,7 @@ use std::pin::Pin;
 
 use notcurses::{Notcurses, Plane, Size, Visual, VisualBuilder};
 
+use notray_engine::Colour;
 use notray_engine::raycasting::worlds::assets;
 
 use crate::{Error, Result};
@@ -40,14 +41,11 @@ impl<'nc> NotcursesCanvas<'nc> {
         }
     }
 
-    pub fn set_pixel(&mut self, x: u16, y: u16, colour: u8) -> Result<()> {
+    pub fn set_pixel(&mut self, x: u16, y: u16, colour: Colour) -> Result<()> {
         let (x, y, width) = (x as usize, y as usize, self.width_pixels as usize);
         let index = y * width + x;
 
-        let palette_index = colour as usize * 3;
-        let palette_entry = &assets::PALETTE[palette_index..palette_index + 3];
-        let (red, green, blue) = (palette_entry[0], palette_entry[1], palette_entry[2]);
-
+        let (red, green, blue) = assets::Palette::rgb_for(colour);
         *self.pixels.get_mut(index).unwrap() = Pixel { red, green, blue, alpha: 0xff };
         Ok(())
     }

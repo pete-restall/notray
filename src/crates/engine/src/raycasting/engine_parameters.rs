@@ -1,7 +1,9 @@
 use crate::HasFixedPoint;
-use super::Angle;
+use super::{Angle, WorldAbsoluteCoordinate};
 
-pub trait EngineParameters { }
+pub trait EngineParameters {
+    const MAX_RAY_DISTANCE: WorldAbsoluteCoordinate;
+}
 
 pub trait Trigonometry {
     fn sine(angle: Angle) -> <Angle as HasFixedPoint>::FixedPoint;
