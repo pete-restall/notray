@@ -1,22 +1,17 @@
-use crate::Colour;
 use crate::raycasting::*;
 use crate::raycasting::worlds::assets;
 
-pub struct World1;
+pub struct World1 {
+    textures: assets::Textures<'static>
+}
 
 impl World1 {
-    pub const fn new() -> Self { Self }
+    pub const fn new() -> Self {
+        Self {
+            textures: assets::Textures::new()
+        }
+    }
 }
-
-enum CellType {
-    SolidColour(u8, u8)
-}
-
-// TODO: For this (static) world, the CellTag is an index into this array...the renderer needs to call back after raycasting to get at this stuff
-static CELL_TYPES: [CellType; 2] = [
-    CellType::SolidColour(0, 0),
-    CellType::SolidColour(2, 3)
-];
 
 impl World for World1 {
     fn spawn_at(&self) -> WorldCoordinates { WorldCoordinates::from_cell_centre(2, 2) }
@@ -41,7 +36,7 @@ impl World for World1 {
 impl WorldRendering for World1 {
     type SkyRenderer<'c> = SolidColourColumnRenderer<'c>;
 
-    type WallRenderer<'c> = SolidColourColumnRenderer<'c>;
+    type WallRenderer<'c> = assets::TextureRenderer<'c>;
 
     type GroundRenderer<'c> = SolidColourColumnRenderer<'c>;
 
@@ -49,12 +44,21 @@ impl WorldRendering for World1 {
         Self::SkyRenderer::new(assets::Palette::SKY_LIGHTEST, column)
     }
 
-    fn wall_for_column<'c>(&self, _cell: Option<CellTag>, column: &'c mut RenderingColumn) -> Self::WallRenderer<'c> {
-        Self::WallRenderer::new(Colour::new(76), column)
+    fn wall_for_column<'c>(&'c self, cell: Option<CellTag>, column: &'c mut RenderingColumn) -> Self::WallRenderer<'c> {
+        self.textures.new_renderer_for(cell, column)
     }
 
     fn ground_for_column<'c>(&self, _cell: Option<CellTag>, column: &'c mut RenderingColumn) -> Self::GroundRenderer<'c> {
         Self::GroundRenderer::new(assets::Palette::GRASS_LIGHTEST, column)
+    }
+}
+
+impl<'c> ColumnRendering for assets::TextureRenderer<'c> {
+    fn render_column_onto<TCanvas: crate::Canvas>(&mut self, canvas: &mut TCanvas) -> crate::Result<()> {
+        match self {
+            assets::TextureRenderer::Unknown(renderer) => renderer.render_column_onto(canvas),
+            assets::TextureRenderer::Brick1(renderer) => renderer.render_column_onto(canvas)
+        }
     }
 }
 

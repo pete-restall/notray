@@ -49,22 +49,33 @@ impl<TEngineParameters, TWorld, TCanvas> FrameRenderer<TCanvas> for Scene<TEngin
             self.raycasting_context.cast_ray(&self.world)?;
 
             let projected_wall_height = self.raycasting_context.projected_wall_height();
-            let top_of_wall = (TEngineParameters::CANVAS_HEIGHT_PIXELS - projected_wall_height) / 2;
+            let projected_wall_height_clipped = projected_wall_height.min(TEngineParameters::CANVAS_HEIGHT_PIXELS);
+            let top_of_wall = (TEngineParameters::CANVAS_HEIGHT_PIXELS - projected_wall_height_clipped) / 2;
             let bottom_of_wall = TEngineParameters::CANVAS_HEIGHT_PIXELS - top_of_wall;
 
-            let mut column = RenderingColumn::new(x, 0, top_of_wall);
+            let mut column = RenderingColumn::new(x, 0, self.raycasting_context.cell_intersection());
+            column.next_span(
+                top_of_wall,
+                0,
+                TEngineParameters::CANVAS_HEIGHT_PIXELS / 2);
             {
                 let mut sky = self.world.sky_for_column(self.raycasting_context.cell_tag(), &mut column);
                 sky.render_column_onto(canvas)?;
             }
 
-            column.next_span(projected_wall_height);
+            column.next_span(
+                projected_wall_height_clipped,
+                (projected_wall_height - projected_wall_height_clipped) / 2,
+                projected_wall_height);
             {
                 let mut wall = self.world.wall_for_column(self.raycasting_context.cell_tag(), &mut column);
                 wall.render_column_onto(canvas)?;
             }
 
-            column.next_span(TEngineParameters::CANVAS_HEIGHT_PIXELS - bottom_of_wall);
+            column.next_span(
+                TEngineParameters::CANVAS_HEIGHT_PIXELS - bottom_of_wall,
+                bottom_of_wall - TEngineParameters::CANVAS_HEIGHT_PIXELS / 2,
+                TEngineParameters::CANVAS_HEIGHT_PIXELS);
             {
                 let mut ground = self.world.ground_for_column(self.raycasting_context.cell_tag(), &mut column);
                 ground.render_column_onto(canvas)?;

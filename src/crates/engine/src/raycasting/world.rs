@@ -7,13 +7,13 @@ pub trait World {
 }
 
 pub trait WorldRendering {
-    type SkyRenderer<'c>: ColumnRendering;
-    type WallRenderer<'c>: ColumnRendering;
-    type GroundRenderer<'c>: ColumnRendering;
+    type SkyRenderer<'c>: ColumnRendering where Self: 'c;
+    type WallRenderer<'c>: ColumnRendering where Self: 'c;
+    type GroundRenderer<'c>: ColumnRendering where Self: 'c;
 
-    fn sky_for_column<'c>(&self, cell: Option<CellTag>, column: &'c mut RenderingColumn) -> Self::SkyRenderer<'c>;
-    fn wall_for_column<'c>(&self, cell: Option<CellTag>, column: &'c mut RenderingColumn) -> Self::WallRenderer<'c>;
-    fn ground_for_column<'c>(&self, cell: Option<CellTag>, column: &'c mut RenderingColumn) -> Self::GroundRenderer<'c>;
+    fn sky_for_column<'c>(&'c self, cell: Option<CellTag>, column: &'c mut RenderingColumn) -> Self::SkyRenderer<'c>;
+    fn wall_for_column<'c>(&'c self, cell: Option<CellTag>, column: &'c mut RenderingColumn) -> Self::WallRenderer<'c>;
+    fn ground_for_column<'c>(&'c self, cell: Option<CellTag>, column: &'c mut RenderingColumn) -> Self::GroundRenderer<'c>;
 }
 
 pub struct CellProbe {
@@ -33,9 +33,11 @@ impl CellProbe {
 pub struct CellTag(u8);
 
 impl CellTag {
-    pub fn from_world_cell_id(cell_id: u8) -> Self {
+    pub const fn from_world_cell_id(cell_id: u8) -> Self {
         Self(cell_id)
     }
+
+    pub const fn world_cell_id(&self) -> u8 { self.0 }
 }
 
 pub enum CellProbeResult {

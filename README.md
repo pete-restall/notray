@@ -1,5 +1,6 @@
 # Notray
 [![Hello, World !](doc/screenshots/20251115-hello-world-400x240-120x41-400x328.png)](doc/screenshots/20251115-hello-world-400x240-120x41-1970x1616.png)
+[![Hello, Texels !](doc/screenshots/20251116-hello-texels-400x240-120x41-400x328.png)](doc/screenshots/20251116-hello-texels-400x240-120x41-1970x1616.png)
 
 ## Huh ?
 I had an itch.  I love a good TUI and I've been wanting to play with the rather awesome [notcurses](https://notcurses.com/) for a while.  A couple of weekends ago I decided to put some effort in and scratch that itch.
@@ -12,10 +13,11 @@ I didn't want to spend the time writing my own TUI toolkit and get lost in (yet 
 The screenshot is the 'Hello, World !' - a very basic raycaster running in a 120x41 character terminal on my FreeBSD desktop.  It's rudimentary but there's enough interesting stuff to commit and push.
 
 ## Next Steps
-I'll iterate on this for as long as I can be bothered.  I certainly want to add texture-mapping as I'm really interested in seeing how `notcurses` renders that.  The things that are 'on the list', in no particular order, are:
+I'll iterate on this for as long as I can be bothered.  I certainly want to add texture-mapping as I'm really interested in seeing how `notcurses` renders that - in fact there is now a _very_ rough and ready approximation, but it needs doing better.  The things that are 'on the list', in no particular order, are:
 - [ ] Collision Detection
 - [x] A proper colour palette to allow shading
-- [ ] Texture-mapped walls
+- [x] Texture-mapped walls
+- [ ] **Proper** Texture-mapped walls
 - [ ] Texture-mapped floors and ceilings
 - [ ] Transparent areas in walls (ie. windows)
 - [ ] A sky map

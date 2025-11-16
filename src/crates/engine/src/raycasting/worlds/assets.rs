@@ -1,4 +1,5 @@
 use crate::{Colour, WellKnownColours};
+use crate::raycasting::*;
 
 pub struct Palette;
 
@@ -21,4 +22,29 @@ impl WellKnownColours for Palette {
     const TRANSPARENT: Colour = Palette::TRANSPARENT;
 }
 
-pub static BRICK_1_64x64: &[u8; 64 * 64] = include_bytes!("brick1-64x64.raw");
+type Brick1Texture<'t> = StretchedStaticTexture<'t, 64, 64, 0xff00>;
+type Brick1TextureColumnRenderer<'c> = TextureMappedColumnRenderer<'c, Brick1Texture<'c>>;
+
+pub struct Textures<'c> {
+    brick1: Brick1Texture<'c>
+}
+
+pub enum TextureRenderer<'c> {
+    Unknown(SolidColourColumnRenderer<'c>),
+    Brick1(Brick1TextureColumnRenderer<'c>)
+}
+
+impl<'c> Textures<'c> {
+    pub const fn new() -> Self {
+        Self {
+            brick1: Brick1Texture::new(include_bytes!("brick1-64x64.raw"))
+        }
+    }
+
+    pub fn new_renderer_for(&'c self, cell_tag: Option<CellTag>, column: &'c mut RenderingColumn) -> TextureRenderer<'c> {
+        match cell_tag.map(|x| x.world_cell_id()).unwrap_or(255) {
+            1 => TextureRenderer::Brick1(Brick1TextureColumnRenderer::new(&self.brick1, column)),
+            _ => TextureRenderer::Unknown(SolidColourColumnRenderer::new(Palette::BLACK, column))
+        }
+    }
+}

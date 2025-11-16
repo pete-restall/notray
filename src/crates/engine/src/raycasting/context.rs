@@ -1,8 +1,8 @@
 use core::marker::PhantomData;
 
 use fixed::FixedU16;
-use fixed::traits::{Fixed, LossyInto};
-use fixed::types::{I2F14, I8F0, I8F24, U11F21, U16F0, U2F14, U8F24};
+use fixed::traits::{Fixed, LossyInto, ToFixed};
+use fixed::types::{I11F21, I2F14, I8F0, I8F24, U0F16, U11F21, U16F0, U2F14, U8F24};
 
 use crate::{Canvas, Error, HasFixedPoint, Result, Vector2d};
 use super::*;
@@ -176,21 +176,71 @@ impl<TEngineParameters: EngineParameters + ProjectionPlaneParameters + Trigonome
     pub fn canvas_column_angle(&self) -> Angle { self.canvas_column_angle }
 
     pub fn projected_wall_height(&self) -> u16 {
-        if self.distance_to_wall > 64 || self.distance_to_wall == 0 {
-            0
-        } else {
+        if self.distance_to_wall != 0 && self.distance_to_wall <= TEngineParameters::MAX_RAY_DISTANCE {
             let distance: U11F21 = self.distance_to_wall.lossy_into();
             let height: u16 = TEngineParameters::ASPECT_RATIO_FOR_WALL_HEIGHT
                 .saturating_div(distance)
                 .saturating_to_num();
 
-            height.min(TEngineParameters::CANVAS_HEIGHT_PIXELS)
+            height
+        } else {
+            0
         }
     }
 
-    pub fn is_wall_horizontal(&self) -> bool { self.is_horizontal_ray_intersection }
-
-    pub fn cell_tag(&self) -> Option<CellTag> {
-        self.cell_tag
+    pub fn cell_intersection(&self) -> Option<RayCellIntersection> {
+        if let Some(cell_tag) = self.cell_tag {
+            Some(RayCellIntersection::new(
+                self.ray_origin,
+                self.ray_direction,
+                self.projected_wall_height(), // TODO: THIS IS CALLED MULTIPLE TIMES...FIX THIS !
+                self.is_horizontal_ray_intersection,
+                cell_tag))
+        } else {
+            None
+        }
     }
+
+    pub fn cell_tag(&self) -> Option<CellTag> { self.cell_tag }
+}
+
+pub struct RayCellIntersection {
+    ray_origin: WorldCoordinates,
+    ray_direction: Vector2d<I8F24>,
+    projected_wall_height: u16,
+    is_horizontal_intersection: bool,
+    cell_tag: CellTag
+}
+
+impl RayCellIntersection {
+    pub const fn new(
+        ray_origin: WorldCoordinates,
+        ray_direction: Vector2d<I8F24>,
+        projected_wall_height: u16,
+        is_horizontal_intersection: bool,
+        cell_tag: CellTag) -> Self {
+
+        Self {
+            ray_origin,
+            ray_direction,
+            projected_wall_height,
+            is_horizontal_intersection,
+            cell_tag
+        }
+    }
+
+    pub fn cell_offset(&self) -> U0F16 {
+        let projection = I11F21::from_num(self.projected_wall_height as i32); // TODO: can retain accuracy if we store this in the RaycastingContext
+        let intersection = if self.is_horizontal_intersection {
+            projection.mul_add(self.ray_direction.y(), self.ray_origin.y().into())
+        } else {
+            projection.mul_add(self.ray_direction.x(), self.ray_origin.x().into())
+        };
+
+        intersection.cast_unsigned().frac().checked_to_fixed().unwrap() // TODO: proper error handling - and unsigned handling
+    }
+
+    pub fn is_horizontal_intersection(&self) -> bool { self.is_horizontal_intersection }
+
+    pub fn cell_tag(&self) -> CellTag { self.cell_tag }
 }
