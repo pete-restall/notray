@@ -1,8 +1,8 @@
 use core::marker::PhantomData;
 
 use fixed::FixedU16;
-use fixed::traits::{Fixed, LossyInto, ToFixed};
-use fixed::types::{I11F21, I2F14, I8F0, I8F24, U0F16, U11F21, U16F0, U2F14, U8F24};
+use fixed::traits::{LossyInto, ToFixed};
+use fixed::types::{I2F14, I8F0, I8F24, U0F16, U11F21, U16F0, U2F14, U8F24};
 
 use crate::{Canvas, Error, HasFixedPoint, Result, Vector2d};
 use super::*;
@@ -25,6 +25,7 @@ pub struct RaycastingContext<TEngineParameters: EngineParameters + ProjectionPla
 
     is_horizontal_ray_intersection: bool,
     distance_to_wall: U8F24,
+    projected_wall_height: U11F21,
     cell_tag: Option<CellTag>
 }
 
@@ -44,6 +45,7 @@ impl<TEngineParameters: EngineParameters + ProjectionPlaneParameters + Trigonome
             ray_cell_step: Vector2d::default(),
             is_horizontal_ray_intersection: false,
             distance_to_wall: U8F24::MAX,
+            projected_wall_height: U11F21::ZERO,
             cell_tag: None
         }
     }
@@ -121,33 +123,43 @@ impl<TEngineParameters: EngineParameters + ProjectionPlaneParameters + Trigonome
     }
 
     pub fn cast_ray<TWorld: World>(&mut self, world: &TWorld) -> Result<()> {
+        let max_distance: U8F24 = TEngineParameters::MAX_RAY_DISTANCE.to_fixed();
         self.distance_to_wall = U8F24::MAX;
+        self.projected_wall_height = U11F21::ZERO;
         loop {
             self.is_horizontal_ray_intersection = self.ray_abs_distance.x() < self.ray_abs_distance.y();
             if self.is_horizontal_ray_intersection {
                 self.ray_abs_distance.set_x(self.ray_abs_distance.x().saturating_add(self.ray_delta.x()));
                 self.ray_cell.set_x(self.ray_cell.x().saturating_add_signed(self.ray_cell_step.x().into()));
+                if self.ray_abs_distance.x() > max_distance {
+                    break;
+                }
             } else {
                 self.ray_abs_distance.set_y(self.ray_abs_distance.y().saturating_add(self.ray_delta.y()));
                 self.ray_cell.set_y(self.ray_cell.y().saturating_add_signed(self.ray_cell_step.y().into()));
-            }
-
-            let intersection_distance = if self.is_horizontal_ray_intersection {
-                (self.ray_abs_distance.x() - self.ray_delta.x()).cast_unsigned().lossy_into()
-            } else {
-                (self.ray_abs_distance.y() - self.ray_delta.y()).cast_unsigned().lossy_into()
-            };
-
-            if intersection_distance > TEngineParameters::MAX_RAY_DISTANCE {
-                break;
+                if self.ray_abs_distance.y() > max_distance {
+                    break;
+                }
             }
 
             // TODO: Place the match arms (but not the call to 'probe_cell') into another object that deals with (column) rendering...
             let probe = CellProbe::new(self.ray_cell);
             match world.probe_cell(&probe) {
                 CellProbeResult::Opaque(cell_tag) => {
+                    let intersection_distance = if self.is_horizontal_ray_intersection {
+                        self.ray_abs_distance.x() - self.ray_delta.x()
+                    } else {
+                        self.ray_abs_distance.y() - self.ray_delta.y()
+                    };
+
+                    let intersection_distance: U11F21 = if intersection_distance > 0 { intersection_distance.lossy_into() } else { U11F21::ZERO };
                     self.cell_tag = Some(cell_tag);
-                    self.distance_to_wall =  intersection_distance;
+                    self.distance_to_wall = intersection_distance.to_fixed();
+                    self.projected_wall_height = if intersection_distance != 0 {
+                        TEngineParameters::ASPECT_RATIO_FOR_WALL_HEIGHT.saturating_div(intersection_distance)
+                    } else {
+                        U11F21::ZERO
+                    };
                     break;
                 },
 
@@ -176,16 +188,8 @@ impl<TEngineParameters: EngineParameters + ProjectionPlaneParameters + Trigonome
     pub fn canvas_column_angle(&self) -> Angle { self.canvas_column_angle }
 
     pub fn projected_wall_height(&self) -> u16 {
-        if self.distance_to_wall != 0 && self.distance_to_wall <= TEngineParameters::MAX_RAY_DISTANCE {
-            let distance: U11F21 = self.distance_to_wall.lossy_into();
-            let height: u16 = TEngineParameters::ASPECT_RATIO_FOR_WALL_HEIGHT
-                .saturating_div(distance)
-                .saturating_to_num();
-
-            height
-        } else {
-            0
-        }
+        let possibly_odd_wall_height: u16 = self.projected_wall_height.saturating_to_num();
+        possibly_odd_wall_height & !1
     }
 
     pub fn cell_intersection(&self) -> Option<RayCellIntersection> {
@@ -193,7 +197,7 @@ impl<TEngineParameters: EngineParameters + ProjectionPlaneParameters + Trigonome
             Some(RayCellIntersection::new(
                 self.ray_origin,
                 self.ray_direction,
-                self.projected_wall_height(), // TODO: THIS IS CALLED MULTIPLE TIMES...FIX THIS !
+                self.projected_wall_height,
                 self.is_horizontal_ray_intersection,
                 cell_tag))
         } else {
@@ -207,7 +211,7 @@ impl<TEngineParameters: EngineParameters + ProjectionPlaneParameters + Trigonome
 pub struct RayCellIntersection {
     ray_origin: WorldCoordinates,
     ray_direction: Vector2d<I8F24>,
-    projected_wall_height: u16,
+    projected_wall_height: U11F21,
     is_horizontal_intersection: bool,
     cell_tag: CellTag
 }
@@ -216,7 +220,7 @@ impl RayCellIntersection {
     pub const fn new(
         ray_origin: WorldCoordinates,
         ray_direction: Vector2d<I8F24>,
-        projected_wall_height: u16,
+        projected_wall_height: U11F21,
         is_horizontal_intersection: bool,
         cell_tag: CellTag) -> Self {
 
@@ -230,14 +234,17 @@ impl RayCellIntersection {
     }
 
     pub fn cell_offset(&self) -> U0F16 {
-        let projection = I11F21::from_num(self.projected_wall_height as i32); // TODO: can retain accuracy if we store this in the RaycastingContext
         let intersection = if self.is_horizontal_intersection {
-            projection.mul_add(self.ray_direction.y(), self.ray_origin.y().into())
+            self.projected_wall_height
+                .cast_signed()
+                .saturating_mul_add(self.ray_direction.y(), self.ray_origin.y().into())
         } else {
-            projection.mul_add(self.ray_direction.x(), self.ray_origin.x().into())
+            self.projected_wall_height
+                .cast_signed()
+                .saturating_mul_add(self.ray_direction.x(), self.ray_origin.x().into())
         };
 
-        intersection.cast_unsigned().frac().checked_to_fixed().unwrap() // TODO: proper error handling - and unsigned handling
+        intersection.cast_unsigned().frac().saturating_to_fixed()
     }
 
     pub fn is_horizontal_intersection(&self) -> bool { self.is_horizontal_intersection }

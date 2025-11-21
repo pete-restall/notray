@@ -18,6 +18,7 @@ pub struct StretchedStaticTexture<'t, const WIDTH_PIXELS: u8, const HEIGHT_PIXEL
 impl<'t, const WIDTH_PIXELS: u8, const HEIGHT_PIXELS: u8, const TRANSPARENT_COLOUR: u16> StretchedStaticTexture<'t, WIDTH_PIXELS, HEIGHT_PIXELS, TRANSPARENT_COLOUR> {
     const WIDTH_PIXELS: usize = WIDTH_PIXELS as usize;
     const WIDTH_PIXELS_FIXED: U16F0 = U16F0::const_from_int(WIDTH_PIXELS as u16);
+    const HEIGHT_PIXELS: usize = HEIGHT_PIXELS as usize;
     const HEIGHT_PIXELS_FIXED: U16F0 = U16F0::const_from_int(HEIGHT_PIXELS as u16);
 
     pub const fn new(pixels: &'t [u8]) -> Self {
@@ -27,8 +28,12 @@ impl<'t, const WIDTH_PIXELS: u8, const HEIGHT_PIXELS: u8, const TRANSPARENT_COLO
 
 impl<'t, const WIDTH_PIXELS: u8, const HEIGHT_PIXELS: u8, const TRANSPARENT_COLOUR: u16> Texture for StretchedStaticTexture<'t, WIDTH_PIXELS, HEIGHT_PIXELS, TRANSPARENT_COLOUR> {
     fn get_texel_at(&self, coordinates: TextureCoordinates) -> Option<Colour> {
-        let u: usize = (coordinates.x().wide_mul(Self::WIDTH_PIXELS_FIXED)).to_num();
-        let v: usize = (coordinates.y().wide_mul(Self::HEIGHT_PIXELS_FIXED)).to_num();
+        let u: usize = (coordinates.x().wide_mul(Self::WIDTH_PIXELS_FIXED)).round().to_num();
+        let u = u.min(Self::WIDTH_PIXELS - 1);
+
+        let v: usize = (coordinates.y().wide_mul(Self::HEIGHT_PIXELS_FIXED)).round().to_num();
+        let v = v.min(Self::HEIGHT_PIXELS - 1);
+
         let texel = self.pixels[v * Self::WIDTH_PIXELS + u];
         if texel as u16 != TRANSPARENT_COLOUR {
             Some(Colour::new(texel))
