@@ -51,13 +51,12 @@ pub fn raycasting_parameters(args: ArgumentTokens) -> TokenStream {
 
     let type_ident = &args.type_ident;
     let engine_parameters_ident = quote! { ::notray_engine::raycasting::EngineParameters };
-    let world_absolute_coordinate_ident = quote! { ::notray_engine::raycasting::WorldAbsoluteCoordinate };
 
     quote! {
         pub struct #type_ident;
 
         impl #engine_parameters_ident for #type_ident {
-            const MAX_RAY_DISTANCE: #world_absolute_coordinate_ident = #world_absolute_coordinate_ident::lit("64");
+            const MAX_RAY_CELL_PROBES: usize = 64;
         }
 
         #projection_plane_parameters

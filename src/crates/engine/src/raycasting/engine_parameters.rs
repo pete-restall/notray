@@ -2,7 +2,7 @@ use crate::HasFixedPoint;
 use super::{Angle, WorldAbsoluteCoordinate};
 
 pub trait EngineParameters {
-    const MAX_RAY_DISTANCE: WorldAbsoluteCoordinate;
+    const MAX_RAY_CELL_PROBES: usize;
 }
 
 pub trait Trigonometry {

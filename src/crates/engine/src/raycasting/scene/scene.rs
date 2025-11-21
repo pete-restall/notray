@@ -48,12 +48,13 @@ impl<TEngineParameters, TWorld, TCanvas> FrameRenderer<TCanvas> for Scene<TEngin
         for x in 0..TEngineParameters::CANVAS_WIDTH_PIXELS {
             self.raycasting_context.cast_ray(&self.world)?;
 
-            let projected_wall_height = self.raycasting_context.projected_wall_height();
+            let cell_intersection = self.raycasting_context.cell_intersection();
+            let projected_wall_height = if let Some(ref wall) = cell_intersection { wall.projected_wall_height_int() } else { 0 };
             let projected_wall_height_clipped = projected_wall_height.min(TEngineParameters::CANVAS_HEIGHT_PIXELS);
             let top_of_wall = (TEngineParameters::CANVAS_HEIGHT_PIXELS - projected_wall_height_clipped) / 2;
             let bottom_of_wall = TEngineParameters::CANVAS_HEIGHT_PIXELS - top_of_wall;
 
-            let mut column = RenderingColumn::new(x, 0, self.raycasting_context.cell_intersection());
+            let mut column = RenderingColumn::new(x, 0, cell_intersection);
             column.next_span(
                 top_of_wall,
                 0,
