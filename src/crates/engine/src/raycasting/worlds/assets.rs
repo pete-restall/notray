@@ -22,12 +22,15 @@ impl WellKnownColours for Palette {
     const TRANSPARENT: Colour = Palette::TRANSPARENT;
 }
 
-type NonTransparentTexture<'t, const W: u8, const H: u8> = StretchedStaticTexture<'t, W, H, 0xff00>;
+const NO_TRANSPARENCY: u16 = 0xff00;
 
-type Brick1Texture<'t> = NonTransparentTexture<'t, 64, 64>;
+type OpaqueStretchedStaticTexture<'t, const W: u8, const H: u8> = StretchedStaticTexture<'t, W, H, NO_TRANSPARENCY>;
+type OpaqueRepeatedStaticTexture<'t, const W: u8, const H: u8> = RepeatedStaticTexture<'t, W, H, NO_TRANSPARENCY>;
+
+type Brick1Texture<'t> = OpaqueStretchedStaticTexture<'t, 64, 64>;
 type Brick1TextureColumnRenderer<'c> = TextureMappedColumnRenderer<'c, Brick1Texture<'c>>;
 
-type Stone1Texture<'t> = NonTransparentTexture<'t, 64, 64>;
+type Stone1Texture<'t> = OpaqueRepeatedStaticTexture<'t, 64, 64>;
 type Stone1TextureColumnRenderer<'c> = TextureMappedColumnRenderer<'c, Stone1Texture<'c>>;
 
 pub struct Textures<'c> {
@@ -45,7 +48,7 @@ impl<'c> Textures<'c> {
     pub const fn new() -> Self {
         Self {
             brick1: Brick1Texture::new(include_bytes!("brick1-64x64.raw")),
-            stone1: Brick1Texture::new(include_bytes!("stone1-64x64.raw"))
+            stone1: Stone1Texture::new(include_bytes!("stone1-64x64.raw"))
         }
     }
 
