@@ -30,7 +30,7 @@ type OpaqueRepeatedStaticTexture<'t, const W: u8, const H: u8> = RepeatedStaticT
 type Brick1Texture<'t> = OpaqueStretchedStaticTexture<'t, 64, 64>;
 type Brick1TextureColumnRenderer<'c> = TextureMappedColumnRenderer<'c, Brick1Texture<'c>>;
 
-type Stone1Texture<'t> = OpaqueRepeatedStaticTexture<'t, 64, 64>;
+type Stone1Texture<'t> = OpaqueRepeatedStaticTexture<'t, 64, 32>;
 type Stone1TextureColumnRenderer<'c> = TextureMappedColumnRenderer<'c, Stone1Texture<'c>>;
 
 pub struct Textures<'c> {
@@ -48,7 +48,7 @@ impl<'c> Textures<'c> {
     pub const fn new() -> Self {
         Self {
             brick1: Brick1Texture::new(include_bytes!("brick1-64x64.raw")),
-            stone1: Stone1Texture::new(include_bytes!("stone1-64x64.raw"))
+            stone1: Stone1Texture::new(include_bytes!("stone1-64x32.raw"))
         }
     }
 
